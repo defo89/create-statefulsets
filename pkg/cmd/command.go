@@ -4,9 +4,6 @@ import (
 	"context"
 	goflag "flag"
 	"fmt"
-	"os"
-	"path/filepath"
-
 	"github.com/defo89/create-statefulsets/pkg/config"
 	"github.com/defo89/create-statefulsets/pkg/statefulset"
 	"github.com/defo89/create-statefulsets/pkg/volumeclaim"
@@ -14,8 +11,9 @@ import (
 	"github.com/spf13/viper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/util/homedir"
+	"os"
 )
 
 var rootCmd = &cobra.Command{
@@ -44,16 +42,14 @@ func init() {
 
 func runRootCmd(cmd *cobra.Command, args []string) error {
 
-	var kubeconfig string
-	if home := homedir.HomeDir(); home != "" {
-		kubeconfig = filepath.Join(home, ".kube", "config")
-	} else {
-		kubeconfig = cfg.KubeConfig
-	}
-	kconfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	rules := clientcmd.NewDefaultClientConfigLoadingRules()
+	overrides := &clientcmd.ConfigOverrides{}
+
+	kconfig, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides).ClientConfig()
 	if err != nil {
-		panic(err)
+		return err
 	}
+
 	clientset, err := kubernetes.NewForConfig(kconfig)
 	if err != nil {
 		panic(err)
