@@ -28,6 +28,7 @@ var cfg = config.Config{}
 func init() {
 	viper.AutomaticEnv()
 	rootCmd.PersistentFlags().StringVar(&cfg.KubeConfig, "kubeconfig", "", "absolute path to the kubeconfig file")
+	rootCmd.PersistentFlags().StringVar(&cfg.KubeContext, "kubecontext", "", "kubecontext to use")
 	rootCmd.PersistentFlags().BoolVar(&cfg.Create, "create", true, "create statefulsets")
 	rootCmd.PersistentFlags().BoolVar(&cfg.Delete, "delete", false, "delete statefulsets")
 	rootCmd.PersistentFlags().StringVar(&cfg.StorageClass, "storage-class", "local-path", "storage class")
@@ -43,8 +44,11 @@ func init() {
 func runRootCmd(cmd *cobra.Command, args []string) error {
 
 	rules := clientcmd.NewDefaultClientConfigLoadingRules()
-	overrides := &clientcmd.ConfigOverrides{}
-
+	var kubecontext string
+	if cfg.KubeContext != "" {
+		kubecontext = cfg.KubeContext
+	}
+	overrides := &clientcmd.ConfigOverrides{CurrentContext: kubecontext}
 	kconfig, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides).ClientConfig()
 	if err != nil {
 		return err
